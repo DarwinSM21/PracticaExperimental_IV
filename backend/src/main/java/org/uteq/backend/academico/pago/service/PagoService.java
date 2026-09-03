@@ -1,6 +1,8 @@
 package org.uteq.backend.academico.pago.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.uteq.backend.academico.estudiante.entity.Estudiante;
@@ -10,6 +12,8 @@ import org.uteq.backend.academico.pago.entity.Pago.TipoPago;
 import org.uteq.backend.academico.pago.repository.PagoRepository;
 import org.uteq.backend.academico.pago.dto.PagoDtos.HistoricoIngresosResponse;
 import org.uteq.backend.academico.pago.dto.PagoDtos.IngresosMesResponse;
+import org.uteq.backend.academico.pago.dto.PagoDtos.PagoPageResponse;
+import org.uteq.backend.academico.pago.dto.PagoDtos.PagoResponse;
 import org.uteq.backend.common.Zonas;
 import org.uteq.backend.common.exception.RecursoNoEncontradoException;
 import org.uteq.backend.seguridad.auditoria.aop.Auditado;
@@ -33,6 +37,21 @@ public class PagoService {
     private final EstudianteRepository estudianteRepository;
     private final UsuarioRepository usuarioRepository;
 
+    @Transactional(readOnly = true)
+    public PagoPageResponse listar(Long idEstudiante, TipoPago tipo, LocalDate fechaDesde, LocalDate fechaHasta, Boolean anulado, int pagina, int tamano) {
+        if (fechaDesde != null && fechaHasta != null && fechaDesde.isAfter(fechaHasta)) {
+            throw new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
+        }
+        var pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamano, 1), 100));
+        Page<Pago> page = pagoRepository.buscarConFiltros(idEstudiante, tipo, fechaDesde, fechaHasta, anulado, pageable);
+
+        List<PagoResponse> contenido = page.getContent().stream()
+                .map(this::aResponse)
+                .toList();
+        return new PagoPageResponse(contenido, page.getNumber(), page.getSize(),
+                page.getTotalElements(), page.getTotalPages());
+    }
+
     @Auditado(accion = "CREAR", entidad = "Pago",
             descripcionSpel = "'creó ' + #result.size() + ' pago(s) de membresía (estudiante #' + #p0 + ')'")
     @Transactional
@@ -40,6 +59,21 @@ public class PagoService {
                                           BigDecimal monto, LocalDate fechaPago, String usernameRegistrador) {
         Estudiante estudiante = buscarEstudiante(idEstudiante);
         Usuario registrador = buscarUsuario(usernameRegistrador);
+
+        if (!Boolean.TRUE.equals(estudiante.getActivo())) {
+            throw new IllegalArgumentException("No se pueden registrar pagos para un estudiante inactivo");
+        }
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El monto debe ser mayor a cero");
+        }
+        if (meses == null || meses.isEmpty()) {
+            throw new IllegalArgumentException("Debe indicar al menos un mes");
+        }
+        for (Integer m : meses) {
+            if (m == null || m < 1 || m > 12) {
+                throw new IllegalArgumentException("El mes " + m + " es inválido (debe ser entre 1 y 12)");
+            }
+        }
 
         List<Integer> mesesUnicos = meses.stream().distinct().sorted().toList();
         for (Integer mes : mesesUnicos) {
@@ -71,6 +105,13 @@ public class PagoService {
     public Pago registrarDiario(Long idEstudiante, BigDecimal monto, LocalDate fechaPago, String usernameRegistrador) {
         Estudiante estudiante = buscarEstudiante(idEstudiante);
         Usuario registrador = buscarUsuario(usernameRegistrador);
+
+        if (!Boolean.TRUE.equals(estudiante.getActivo())) {
+            throw new IllegalArgumentException("No se pueden registrar pagos para un estudiante inactivo");
+        }
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El monto debe ser mayor a cero");
+        }
 
         return pagoRepository.save(Pago.builder()
                 .estudiante(estudiante)
@@ -159,5 +200,25 @@ public class PagoService {
     private Usuario buscarUsuario(String username) {
         return usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("Usuario autenticado no encontrado: " + username));
+    }
+
+    private PagoResponse aResponse(Pago p) {
+        var persona = p.getEstudiante().getPersona();
+        var registrador = p.getRegistradoPor().getPersona();
+        return new PagoResponse(
+                p.getIdPago(),
+                p.getEstudiante().getIdEstudiante(),
+                persona.getNombre() + " " + persona.getApellido(),
+                p.getTipo(),
+                p.getAnio() != null ? p.getAnio().intValue() : null,
+                p.getMes() != null ? p.getMes().intValue() : null,
+                p.getMonto(),
+                p.getFechaPago(),
+                registrador.getNombre() + " " + registrador.getApellido(),
+                p.getAnuladoEn(),
+                p.getAnuladoPor() == null ? null
+                        : p.getAnuladoPor().getPersona().getNombre() + " "
+                          + p.getAnuladoPor().getPersona().getApellido(),
+                p.getMotivoAnulacion());
     }
 }

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.uteq.backend.academico.estudiante.entity.Estudiante;
 import org.uteq.backend.academico.estudiante.repository.EstudianteRepository;
 import org.uteq.backend.academico.pago.entity.Pago;
@@ -28,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +50,14 @@ class PagoServiceTest {
     private Estudiante estudiante() {
         return Estudiante.builder().idEstudiante(ID_EST)
                 .persona(Persona.builder().nombre("Juan").apellido("Perez").build())
+                .activo(true)
+                .build();
+    }
+
+    private Estudiante estudianteInactivo() {
+        return Estudiante.builder().idEstudiante(ID_EST)
+                .persona(Persona.builder().nombre("Juan").apellido("Perez").build())
+                .activo(false)
                 .build();
     }
 
@@ -57,6 +69,11 @@ class PagoServiceTest {
 
     private void existenEstudianteYUsuario() {
         when(estudianteRepository.findById(ID_EST)).thenReturn(Optional.of(estudiante()));
+        when(usuarioRepository.findByUsername(USERNAME)).thenReturn(Optional.of(registrador()));
+    }
+
+    private void existenEstudianteInactivoYUsuario() {
+        when(estudianteRepository.findById(ID_EST)).thenReturn(Optional.of(estudianteInactivo()));
         when(usuarioRepository.findByUsername(USERNAME)).thenReturn(Optional.of(registrador()));
     }
 
@@ -254,5 +271,141 @@ class PagoServiceTest {
 
         assertThrows(RecursoNoEncontradoException.class,
                 () -> service.anular(404L, "motivo", USERNAME));
+    }
+
+    // --- Validaciones de estudiante inactivo ---
+
+    @Test
+    @DisplayName("registrarMembresia rechaza estudiante inactivo")
+    void registrarMembresia_estudiante_inactivo() {
+        existenEstudianteInactivoYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("estudiante inactivo");
+        verify(pagoRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("registrarDiario rechaza estudiante inactivo")
+    void registrarDiario_estudiante_inactivo() {
+        existenEstudianteInactivoYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarDiario(ID_EST, new BigDecimal("5.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("estudiante inactivo");
+        verify(pagoRepository, never()).save(any());
+    }
+
+    // --- Validaciones de monto ---
+
+    @Test
+    @DisplayName("registrarMembresia rechaza monto cero")
+    void registrarMembresia_monto_cero() {
+        existenEstudianteYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), BigDecimal.ZERO, null, USERNAME));
+
+        assertThat(e.getMessage()).contains("monto");
+    }
+
+    @Test
+    @DisplayName("registrarMembresia rechaza monto negativo")
+    void registrarMembresia_monto_negativo() {
+        existenEstudianteYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), new BigDecimal("-10.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("monto");
+    }
+
+    @Test
+    @DisplayName("registrarMembresia rechaza monto null")
+    void registrarMembresia_monto_null() {
+        existenEstudianteYUsuario();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), null, null, USERNAME));
+    }
+
+    @Test
+    @DisplayName("registrarDiario rechaza monto cero")
+    void registrarDiario_monto_cero() {
+        existenEstudianteYUsuario();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarDiario(ID_EST, BigDecimal.ZERO, null, USERNAME));
+    }
+
+    // --- Validaciones de meses ---
+
+    @Test
+    @DisplayName("registrarMembresia rechaza lista de meses vacia")
+    void registrarMembresia_meses_vacia() {
+        existenEstudianteYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("al menos un mes");
+    }
+
+    @Test
+    @DisplayName("registrarMembresia rechaza mes fuera de rango (13)")
+    void registrarMembresia_mes_fuera_rango() {
+        existenEstudianteYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(13), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("inválido");
+    }
+
+    @Test
+    @DisplayName("registrarMembresia rechaza mes 0")
+    void registrarMembresia_mes_cero() {
+        existenEstudianteYUsuario();
+
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(0), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThat(e.getMessage()).contains("inválido");
+    }
+
+    // --- listar ---
+
+    @Test
+    @DisplayName("listar delega al repositorio y devuelve PagoPageResponse")
+    void listar_delega_correctamente() {
+        var pago = Pago.builder()
+                .idPago(1L).tipo(TipoPago.DIARIO).monto(new BigDecimal("5.00"))
+                .fechaPago(LocalDate.of(2026, 8, 15))
+                .estudiante(Estudiante.builder().idEstudiante(1L)
+                        .persona(Persona.builder().nombre("Juan").apellido("Perez").build()).build())
+                .registradoPor(Usuario.builder().idUsuario(9L)
+                        .persona(Persona.builder().nombre("Ana").apellido("Admin").build()).build())
+                .build();
+        var page = new PageImpl<>(List.of(pago), PageRequest.of(0, 20), 1);
+        when(pagoRepository.buscarConFiltros(isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+                .thenReturn(page);
+
+        var result = service.listar(null, null, null, null, null, 0, 20);
+
+        assertThat(result.contenido()).hasSize(1);
+        assertThat(result.total()).isEqualTo(1);
+        assertThat(result.pagina()).isZero();
+    }
+
+    @Test
+    @DisplayName("listar rechaza fecha desde posterior a fecha hasta")
+    void listar_fechas_invalidas() {
+        var e = assertThrows(IllegalArgumentException.class, () ->
+                service.listar(null, null, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 8, 1), null, 0, 20));
+
+        assertThat(e.getMessage()).contains("fecha desde");
     }
 }

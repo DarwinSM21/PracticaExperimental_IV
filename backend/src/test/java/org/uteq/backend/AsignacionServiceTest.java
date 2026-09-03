@@ -208,6 +208,18 @@ class AsignacionServiceTest {
     }
 
     @Test
+    @DisplayName("crear con fecha de devolucion en el pasado lanza excepcion")
+    void crear_fecha_devolucion_pasada_lanza_excepcion() {
+        AsignacionRequest request = new AsignacionRequest(1L, 1, TipoDestinatario.ESTUDIANTE, 5L, null, java.time.LocalDate.now().minusDays(1), null);
+
+        assertThatThrownBy(() -> asignacionService.crear(request, "recepcion"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fecha de devolución esperada no puede ser anterior");
+
+        verifyNoInteractions(articuloRepository);
+    }
+
+    @Test
     @DisplayName("devolver una asignacion inexistente lanza RecursoNoEncontradoException")
     void devolver_asignacion_inexistente_lanza_excepcion() {
         when(asignacionRepository.findById(404L)).thenReturn(Optional.empty());

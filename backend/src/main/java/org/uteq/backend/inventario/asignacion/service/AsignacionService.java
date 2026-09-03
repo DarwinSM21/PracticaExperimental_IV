@@ -56,6 +56,11 @@ public class AsignacionService {
     public AsignacionResponse crear(AsignacionRequest request, String usernameRegistrador) {
         validarDestinatario(request.tipoDestinatario(), request.idEstudiante(), request.idEntrenador());
 
+        LocalDate hoy = LocalDate.now(Zonas.ECUADOR);
+        if (request.fechaDevolucionEsperada() != null && request.fechaDevolucionEsperada().isBefore(hoy)) {
+            throw new IllegalArgumentException("La fecha de devolución esperada no puede ser anterior a la fecha de asignación actual");
+        }
+
         Articulo articulo = buscarArticulo(request.idArticulo());
         int nuevoStock = articulo.getStockActual() - request.cantidad();
         if (nuevoStock < 0) {

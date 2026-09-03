@@ -408,4 +408,49 @@ class PagoServiceTest {
 
         assertThat(e.getMessage()).contains("fecha desde");
     }
+
+    @Test
+    @DisplayName("registrarMembresia valida parametros requeridos y rangos")
+    void registrarMembresia_valida_parametros() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(null, 2026, List.of(1), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), new BigDecimal("30.00"), null, "  "));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 1990, List.of(1), new BigDecimal("30.00"), null, USERNAME));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarMembresia(ID_EST, 2026, List.of(1), new BigDecimal("30.00"),
+                        LocalDate.now(Zonas.ECUADOR).plusDays(1), USERNAME));
+    }
+
+    @Test
+    @DisplayName("registrarDiario valida parametros requeridos y fecha no futura")
+    void registrarDiario_valida_parametros() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarDiario(null, new BigDecimal("5.00"), null, USERNAME));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarDiario(ID_EST, new BigDecimal("5.00"), null, ""));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.registrarDiario(ID_EST, new BigDecimal("5.00"),
+                        LocalDate.now(Zonas.ECUADOR).plusDays(2), USERNAME));
+    }
+
+    @Test
+    @DisplayName("historialDe rechaza idEstudiante nulo")
+    void historialDe_valida_idEstudiante() {
+        assertThrows(IllegalArgumentException.class, () -> service.historialDe(null));
+    }
+
+    @Test
+    @DisplayName("anular valida parametros requeridos")
+    void anular_valida_parametros() {
+        assertThrows(IllegalArgumentException.class, () -> service.anular(null, "Motivo", USERNAME));
+        assertThrows(IllegalArgumentException.class, () -> service.anular(1L, "   ", USERNAME));
+        assertThrows(IllegalArgumentException.class, () -> service.anular(1L, "Motivo", "   "));
+    }
 }

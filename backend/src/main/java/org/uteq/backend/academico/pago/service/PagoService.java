@@ -57,6 +57,19 @@ public class PagoService {
     @Transactional
     public List<Pago> registrarMembresia(Long idEstudiante, int anio, List<Integer> meses,
                                           BigDecimal monto, LocalDate fechaPago, String usernameRegistrador) {
+        if (idEstudiante == null) {
+            throw new IllegalArgumentException("El ID del estudiante es obligatorio");
+        }
+        if (usernameRegistrador == null || usernameRegistrador.trim().isEmpty()) {
+            throw new IllegalArgumentException("El usuario registrador es obligatorio");
+        }
+        if (anio < 2000 || anio > 2100) {
+            throw new IllegalArgumentException("El año debe ser un año válido");
+        }
+        if (fechaPago != null && fechaPago.isAfter(LocalDate.now(Zonas.ECUADOR))) {
+            throw new IllegalArgumentException("La fecha de pago no puede ser futura");
+        }
+
         Estudiante estudiante = buscarEstudiante(idEstudiante);
         Usuario registrador = buscarUsuario(usernameRegistrador);
 
@@ -103,6 +116,16 @@ public class PagoService {
             descripcionSpel = "'registró un pago diario de $' + #p1 + ' (estudiante #' + #p0 + ')'")
     @Transactional
     public Pago registrarDiario(Long idEstudiante, BigDecimal monto, LocalDate fechaPago, String usernameRegistrador) {
+        if (idEstudiante == null) {
+            throw new IllegalArgumentException("El ID del estudiante es obligatorio");
+        }
+        if (usernameRegistrador == null || usernameRegistrador.trim().isEmpty()) {
+            throw new IllegalArgumentException("El usuario registrador es obligatorio");
+        }
+        if (fechaPago != null && fechaPago.isAfter(LocalDate.now(Zonas.ECUADOR))) {
+            throw new IllegalArgumentException("La fecha de pago no puede ser futura");
+        }
+
         Estudiante estudiante = buscarEstudiante(idEstudiante);
         Usuario registrador = buscarUsuario(usernameRegistrador);
 
@@ -124,6 +147,9 @@ public class PagoService {
 
     @Transactional(readOnly = true)
     public List<Pago> historialDe(Long idEstudiante) {
+        if (idEstudiante == null) {
+            throw new IllegalArgumentException("El ID del estudiante es obligatorio");
+        }
         if (!estudianteRepository.existsById(idEstudiante)) {
             throw new RecursoNoEncontradoException("Estudiante no encontrado con id: " + idEstudiante);
         }
@@ -179,6 +205,16 @@ public class PagoService {
     @Auditado(accion = "ANULAR", entidad = "Pago", idSpel = "#p0")
     @Transactional
     public Pago anular(Long idPago, String motivo, String usernameAnulador) {
+        if (idPago == null) {
+            throw new IllegalArgumentException("El ID del pago es obligatorio");
+        }
+        if (motivo == null || motivo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El motivo de anulación es obligatorio");
+        }
+        if (usernameAnulador == null || usernameAnulador.trim().isEmpty()) {
+            throw new IllegalArgumentException("El usuario anulador es obligatorio");
+        }
+
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado con id: " + idPago));
 

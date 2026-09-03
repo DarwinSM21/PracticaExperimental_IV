@@ -1,0 +1,98 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.54cm}
+\usepackage{hyperref}
+\usepackage{enumerate}
+\usepackage{graphicx}
+
+\title{Informe Técnico de Mejoras y Aseguramiento de Calidad \\ Proyecto Práctica Experimental IV}
+\author{Equipo de Desarrollo}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+El presente informe documenta las mejoras continuas, la resolución de vulnerabilidades y la ampliación de la cobertura de pruebas realizadas en el proyecto \textbf{PracticaExperimental\_IV}. El objetivo principal ha sido asegurar la calidad general del proyecto para su evaluación final, garantizando que el sistema sea robusto, seguro y mantenga la integridad de los datos.
+
+\section{Fases de Mejora Implementadas}
+
+El trabajo se dividió estratégicamente en 10 fases enfocadas en distintas capas de la arquitectura:
+
+\subsection{Fase 1: Refactorización de Servicios Iniciales}
+\begin{itemize}
+    \item \textbf{LesionService:} Se implementaron validaciones defensivas para asegurar que las entidades referenciadas (Estudiante, Entrenador) existan y estén activas antes de registrar una lesión.
+    \item Se crearon y ampliaron las pruebas unitarias asegurando el manejo correcto de parámetros nulos y estados inválidos.
+\end{itemize}
+
+\subsection{Fase 2: Revisión Profunda de Servicios}
+\begin{itemize}
+    \item \textbf{PagoService:} Se establecieron controles estrictos sobre los años, meses, montos no negativos y fechas de pago (impidiendo fechas futuras). Se validó la obligatoriedad de los motivos de anulación.
+    \item \textbf{HorarioService:} Se restringió la creación de horarios a rangos de días válidos (1-7) y se aseguró la coherencia temporal (hora de inicio menor a hora de fin).
+\end{itemize}
+
+\subsection{Fase 3: Capa de Acceso a Datos (Repositories)}
+\begin{itemize}
+    \item Se auditaron las consultas personalizadas de \texttt{PartidoRepository} y \texttt{HorarioRepository}.
+    \item Se implementaron pruebas \texttt{@DataJpaTest} para validar los filtros booleanos, la correcta paginación y la recuperación eficiente de datos con asociaciones (Entity Graphs).
+\end{itemize}
+
+\subsection{Fase 4: Controladores y REST API}
+\begin{itemize}
+    \item Los endpoints expuestos se sometieron a pruebas de integración ligeras usando \texttt{MockMvc}.
+    \item Se normalizaron parámetros críticos como la paginación (\texttt{page} y \texttt{size}) previniendo excepciones internas que desencadenan errores 500 por valores negativos o excesivos.
+\end{itemize}
+
+\subsection{Fase 5: Partidos (Filtros y Reglas de Negocio)}
+\begin{itemize}
+    \item Se protegió la mutación de partidos cerrados, asegurando que un partido debe ser explícitamente reabierto antes de modificar su resultado.
+    \item Validaciones para asegurar goles a favor y en contra con valores siempre no negativos.
+\end{itemize}
+
+\subsection{Fase 6: Rendimiento y Caché (Redis)}
+\begin{itemize}
+    \item Se configuró la gestión de la caché prohibiendo almacenar valores nulos (\texttt{disableCachingNullValues()}) para evitar inestabilidad.
+    \item Se validaron las entradas y duraciones de los \texttt{jti} en la lista negra (\texttt{RedisBlacklistService}) protegiendo a la base de datos Redis de accesos inválidos.
+\end{itemize}
+
+\subsection{Fase 7: Seguridad y Autenticación}
+\begin{itemize}
+    \item Se fortificó la generación y validación de tokens JWT asegurando que no se generen tokens para usuarios nulos o en blanco.
+    \item El servicio de JWT maneja ahora los errores de formato sin lanzar excepciones de manera silenciosa, devolviendo estados falsos coherentes.
+\end{itemize}
+
+\subsection{Fase 8: Manejo Global de Errores}
+\begin{itemize}
+    \item El \texttt{GlobalExceptionHandler} fue enriquecido para no exponer información sensible.
+    \item Excepciones de integridad (\texttt{DataIntegrityViolationException}) y estados inválidos (\texttt{IllegalStateException}) ahora retornan \textbf{HTTP 409 Conflict} ocultando sentencias SQL.
+    \item Violaciones de restricciones (\texttt{ConstraintViolationException}) se mapean correctamente a \textbf{HTTP 400 Bad Request}.
+\end{itemize}
+
+\subsection{Fase 9: Cobertura de Pruebas (JaCoCo)}
+\begin{itemize}
+    \item Las diversas capas del código backend fueron testeadas de forma integral, levantando un total de \textbf{644 pruebas exitosas}.
+    \item Los reportes de JaCoCo verifican la cobertura agregada por las nuevas validaciones preventivas.
+\end{itemize}
+
+\subsection{Fase 10: Verificación Final del Repositorio}
+\begin{itemize}
+    \item Todos los archivos compilados temporalmente han sido omitidos del control de versiones (correctamente manejados vía \texttt{.gitignore}).
+    \item Las adiciones pasaron por validaciones locales, los commits fueron atómicos y explicativos, y el estado del repositorio remoto (\texttt{origin/main}) ha sido completamente sincronizado.
+\end{itemize}
+
+\section{Resultados}
+
+\begin{itemize}
+    \item \textbf{Total de pruebas unitarias y de integración exitosas:} 644.
+    \item \textbf{Vulnerabilidades mitigadas:} Fugas de SQL en endpoints y errores 500 por mala formación de parámetros.
+    \item \textbf{Arquitectura mantenida:} Los cambios introducidos respetaron la modularidad de servicios, sin acoplamiento innecesario.
+    \item \textbf{Estabilidad Git:} Todo el trabajo se encuentra reflejado en \texttt{origin/main}, con un historial limpio y estructurado en pequeños \textit{commits}.
+\end{itemize}
+
+\section{Conclusión}
+La revisión, reestructuración y escritura de pruebas en estas 10 fases han transformado el proyecto \textbf{PracticaExperimental\_IV} en una solución robusta y resistente frente a entradas inesperadas. El producto de software resultante cumple satisfactoriamente con los requisitos de calidad previstos para su presentación final.
+
+\end{document}

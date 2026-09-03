@@ -41,7 +41,7 @@ class LesionServiceTest {
 
     private void existenAmbos() {
         when(estudianteRepository.findById(ID_EST))
-                .thenReturn(Optional.of(Estudiante.builder().idEstudiante(ID_EST).build()));
+                .thenReturn(Optional.of(Estudiante.builder().idEstudiante(ID_EST).activo(true).build()));
         when(entrenadorRepository.findById(ID_ENT))
                 .thenReturn(Optional.of(Entrenador.builder().idEntrenador(ID_ENT).build()));
     }
@@ -58,6 +58,27 @@ class LesionServiceTest {
 
         assertTrue(lesion.estaActiva());
         assertNull(lesion.getFechaAlta());
+    }
+
+    @Test
+    @DisplayName("Rechaza registrar lesion a un estudiante inactivo")
+    void rechazaEstudianteInactivo() {
+        when(estudianteRepository.findById(ID_EST))
+                .thenReturn(Optional.of(Estudiante.builder().idEstudiante(ID_EST).activo(false).build()));
+
+        var ex = assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrar(ID_EST, ID_ENT, "Esguince", LocalDate.now(), null));
+        assertTrue(ex.getMessage().contains("inactivo"));
+    }
+
+    @Test
+    @DisplayName("Rechaza registrar lesion si la descripcion es nula o vacia")
+    void rechazaDescripcionVacia() {
+        existenAmbos();
+
+        var ex = assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrar(ID_EST, ID_ENT, "   ", LocalDate.now(), null));
+        assertTrue(ex.getMessage().contains("descripción"));
     }
 
     @Test
@@ -167,14 +188,40 @@ class LesionServiceTest {
     }
 
     @Test
+    @DisplayName("Rechaza registrar lesion con idEstudiante o idEntrenador nulo")
+    void rechazaIdsNulosEnRegistrar() {
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrar(null, ID_ENT, "Lesion", LocalDate.now(), null));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrar(ID_EST, null, "Lesion", LocalDate.now(), null));
+    }
+
+    @Test
+    @DisplayName("Rechaza dar de alta con idLesion nulo")
+    void rechazaIdLesionNuloEnDarDeAlta() {
+        assertThrows(IllegalArgumentException.class, () -> servicio.darDeAlta(null, null));
+    }
+
+    @Test
     @DisplayName("historialDe delega la paginacion al repositorio, filtrando por estudiante")
     void historialDeDelegaAlRepositorio() {
         var pageable = PageRequest.of(0, 20);
         var pagina = new PageImpl<Lesion>(List.of());
+        when(estudianteRepository.existsById(ID_EST)).thenReturn(true);
         when(lesionRepository.findByEstudianteIdEstudianteOrderByFechaLesionDesc(ID_EST, pageable))
                 .thenReturn(pagina);
 
         assertEquals(pagina, servicio.historialDe(ID_EST, pageable));
+    }
+
+    @Test
+    @DisplayName("historialDe rechaza idEstudiante nulo o no encontrado")
+    void historialDeValidaIdEstudiante() {
+        var pageable = PageRequest.of(0, 20);
+        assertThrows(IllegalArgumentException.class, () -> servicio.historialDe(null, pageable));
+
+        when(estudianteRepository.existsById(999L)).thenReturn(false);
+        assertThrows(RecursoNoEncontradoException.class, () -> servicio.historialDe(999L, pageable));
     }
 
     @Test

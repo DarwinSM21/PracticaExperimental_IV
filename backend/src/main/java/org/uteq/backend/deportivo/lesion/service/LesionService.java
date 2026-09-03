@@ -30,12 +30,27 @@ public class LesionService {
     @Transactional
     public Lesion registrar(Long idEstudiante, Long idEntrenador, String descripcion,
                             LocalDate fechaLesion, LocalDate fechaEstimadaRetorno) {
+        if (idEstudiante == null) {
+            throw new IllegalArgumentException("El ID del estudiante es obligatorio");
+        }
+        if (idEntrenador == null) {
+            throw new IllegalArgumentException("El ID del entrenador es obligatorio");
+        }
+
         var estudiante = estudianteRepository.findById(idEstudiante)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el estudiante " + idEstudiante));
+        if (Boolean.FALSE.equals(estudiante.getActivo())) {
+            throw new IllegalArgumentException("No se puede registrar lesión a un estudiante inactivo");
+        }
+
         var entrenador = entrenadorRepository.findById(idEntrenador)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el entrenador " + idEntrenador));
+
+        if (descripcion == null || descripcion.trim().isEmpty()) {
+            throw new IllegalArgumentException("La descripción de la lesión es obligatoria");
+        }
 
         lesionRepository.buscarActivaPorEstudiante(idEstudiante).ifPresent(l -> {
             throw new IllegalArgumentException(
@@ -64,6 +79,9 @@ public class LesionService {
             descripcionSpel = "'dio de alta la lesión #' + #result.idLesion")
     @Transactional
     public Lesion darDeAlta(Long idLesion, LocalDate fechaAlta) {
+        if (idLesion == null) {
+            throw new IllegalArgumentException("El ID de la lesión es obligatorio");
+        }
         var lesion = lesionRepository.findById(idLesion)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe la lesion " + idLesion));
@@ -89,6 +107,12 @@ public class LesionService {
 
     @Transactional(readOnly = true)
     public Page<Lesion> historialDe(Long idEstudiante, Pageable pageable) {
+        if (idEstudiante == null) {
+            throw new IllegalArgumentException("El ID del estudiante es obligatorio");
+        }
+        if (!estudianteRepository.existsById(idEstudiante)) {
+            throw new RecursoNoEncontradoException("No existe el estudiante " + idEstudiante);
+        }
         return lesionRepository.findByEstudianteIdEstudianteOrderByFechaLesionDesc(idEstudiante, pageable);
     }
 

@@ -28,14 +28,29 @@ public class JwtService {
     private String audience;
 
     public String generateToken(String username, String rol) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de usuario no puede ser nulo ni vacío");
+        }
+        if (rol == null || rol.trim().isEmpty()) {
+            throw new IllegalArgumentException("El rol no puede ser nulo ni vacío");
+        }
         return buildToken(username, rol, expirationMs, "access");
     }
 
     public String generateRefreshToken(String username, String rol) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de usuario no puede ser nulo ni vacío");
+        }
+        if (rol == null || rol.trim().isEmpty()) {
+            throw new IllegalArgumentException("El rol no puede ser nulo ni vacío");
+        }
         return buildToken(username, rol, refreshExpirationMs, "refresh");
     }
 
     public boolean isTokenValid(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
         try {
             Claims claims = parseToken(token).getPayload();
             java.util.Set<String> aud = claims.getAudience();

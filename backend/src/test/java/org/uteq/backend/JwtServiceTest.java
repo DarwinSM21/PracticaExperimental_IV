@@ -81,4 +81,26 @@ class JwtServiceTest {
         assertEquals(EXPIRATION_MS, jwtService.getExpirationMs());
         assertEquals(REFRESH_EXPIRATION_MS, jwtService.getRefreshExpirationMs());
     }
+
+    @Test
+    @DisplayName("generateToken y generateRefreshToken validan username y rol no nulos ni vacíos")
+    void validarParametrosGeneracionToken() {
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateToken(null, "ADMINISTRADOR"));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateToken("   ", "ADMINISTRADOR"));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateToken("admin", null));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateToken("admin", "  "));
+
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateRefreshToken(null, "ADMINISTRADOR"));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateRefreshToken("   ", "ADMINISTRADOR"));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateRefreshToken("admin", null));
+        assertThrows(IllegalArgumentException.class, () -> jwtService.generateRefreshToken("admin", "  "));
+    }
+
+    @Test
+    @DisplayName("isTokenValid retorna false para token nulo o en blanco")
+    void tokenNuloOEnBlancoEsInvalido() {
+        assertFalse(jwtService.isTokenValid(null));
+        assertFalse(jwtService.isTokenValid(""));
+        assertFalse(jwtService.isTokenValid("    "));
+    }
 }

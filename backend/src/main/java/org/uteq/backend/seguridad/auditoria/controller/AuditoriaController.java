@@ -36,6 +36,10 @@ public class AuditoriaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        if (fechaDesde != null && fechaHasta != null && fechaDesde.isAfter(fechaHasta)) {
+            throw new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fecha"));
         OffsetDateTime desde = fechaDesde != null
                 ? fechaDesde.atStartOfDay(Zonas.ECUADOR).toOffsetDateTime() : null;

@@ -74,4 +74,13 @@ class AuditoriaControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].descripcion").value("editó Lesion #45"));
     }
+
+    @Test
+    @DisplayName("GET /api/admin/auditorias con fechaDesde posterior a fechaHasta devuelve 400")
+    void listarConFechasInvertidasDa400() throws Exception {
+        mockMvc.perform(get("/api/admin/auditorias")
+                        .param("fechaDesde", "2026-09-01")
+                        .param("fechaHasta", "2026-08-01"))
+                .andExpect(status().isBadRequest());
+    }
 }

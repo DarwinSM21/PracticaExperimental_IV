@@ -37,17 +37,18 @@ public class RedisCacheConfig {
 
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
-        RedisCacheConfiguration configEstudiantes = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofSeconds(ttlEstudiantesSeconds))
+        RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .disableCachingNullValues()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
 
-        RedisCacheConfiguration configEntrenadores = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofSeconds(ttlEntrenadoresSeconds))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
+        RedisCacheConfiguration configEstudiantes = baseConfig
+                .entryTtl(Duration.ofSeconds(ttlEstudiantesSeconds));
 
-        RedisCacheConfiguration configUsuarios = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofSeconds(ttlUsuariosSeconds))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
+        RedisCacheConfiguration configEntrenadores = baseConfig
+                .entryTtl(Duration.ofSeconds(ttlEntrenadoresSeconds));
+
+        RedisCacheConfiguration configUsuarios = baseConfig
+                .entryTtl(Duration.ofSeconds(ttlUsuariosSeconds));
 
         return RedisCacheManager.builder(factory)
                 .withCacheConfiguration(CACHE_ESTUDIANTES, configEstudiantes)

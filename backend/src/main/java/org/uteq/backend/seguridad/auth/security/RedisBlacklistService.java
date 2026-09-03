@@ -14,15 +14,21 @@ public class RedisBlacklistService {
     private final StringRedisTemplate redis;
 
     public void agregar(String jti, long ttlMs) {
+        if (jti == null || jti.trim().isEmpty() || ttlMs <= 0) {
+            return;
+        }
         redis.opsForValue().set(PREFIX + jti, "revoked", Duration.ofMillis(ttlMs));
     }
 
     public boolean estaRevocado(String jti) {
+        if (jti == null || jti.trim().isEmpty()) {
+            return false;
+        }
         return Boolean.TRUE.equals(redis.hasKey(PREFIX + jti));
     }
 
     public void revocar(String jti, long tiempoRestanteMs) {
-        if (tiempoRestanteMs > 0) {
+        if (jti != null && !jti.trim().isEmpty() && tiempoRestanteMs > 0) {
             redis.opsForValue().set(PREFIX + jti, "revoked",
                     Duration.ofMillis(tiempoRestanteMs));
         }

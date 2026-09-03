@@ -83,4 +83,22 @@ class RedisBlacklistServiceTest {
 
         assertFalse(service.estaRevocado(JTI_TEST));
     }
+
+    @Test
+    @DisplayName("agregar y revocar ignoran jti nulo o en blanco")
+    void ignoraJtiNuloOEnBlanco() {
+        service.agregar(null, 1000L);
+        service.agregar("  ", 1000L);
+        service.agregar(JTI_TEST, 0L);
+        service.agregar(JTI_TEST, -50L);
+
+        service.revocar(null, 1000L);
+        service.revocar("   ", 1000L);
+
+        verify(redis, never()).opsForValue();
+
+        assertFalse(service.estaRevocado(null));
+        assertFalse(service.estaRevocado("   "));
+        verify(redis, never()).hasKey(anyString());
+    }
 }

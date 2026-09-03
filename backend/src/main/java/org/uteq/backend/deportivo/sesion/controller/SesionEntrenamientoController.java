@@ -38,11 +38,15 @@ public class SesionEntrenamientoController {
     public ResponseEntity<List<SesionHoyResponse>> mias(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        
+        int normalizedPage = Math.max(0, page);
+        int normalizedSize = Math.max(1, Math.min(100, size));
+        
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean veTodasLasSesiones = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRADOR"));
 
-        return ResponseEntity.ok(sesionService.misSesiones(auth.getName(), veTodasLasSesiones, page, size));
+        return ResponseEntity.ok(sesionService.misSesiones(auth.getName(), veTodasLasSesiones, normalizedPage, normalizedSize));
     }
 
     @GetMapping("/{idSesion}/historial")

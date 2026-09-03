@@ -38,6 +38,10 @@ public class ArticuloService {
             descripcionSpel = "'creó el artículo ' + #result.nombre")
     @Transactional
     public ArticuloResponse crear(ArticuloRequest request) {
+        if (request.stockMinimo() < 0) {
+            throw new IllegalArgumentException("El stock mínimo no puede ser negativo");
+        }
+        
         Articulo articulo = Articulo.builder()
                 .nombre(request.nombre())
                 .tipo(request.tipo())
@@ -57,6 +61,10 @@ public class ArticuloService {
             descripcionSpel = "'editó el artículo ' + #result.nombre")
     @Transactional
     public ArticuloResponse editar(Long id, ArticuloRequest request) {
+        if (request.stockMinimo() < 0) {
+            throw new IllegalArgumentException("El stock mínimo no puede ser negativo");
+        }
+        
         Articulo articulo = buscarEntidad(id);
 
         articulo.setNombre(request.nombre());

@@ -249,4 +249,77 @@ class PartidoServiceTest {
 
         verify(partidoRepository).buscarConFiltros(eq(2L), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 15)));
     }
+
+    @Test
+    @DisplayName("buscarPorId valida id no nulo")
+    void buscarPorId_valida_null() {
+        assertThrows(IllegalArgumentException.class, () -> servicio.buscarPorId(null));
+    }
+
+    @Test
+    @DisplayName("crear valida campos obligatorios")
+    void crear_valida_campos() {
+        assertThrows(IllegalArgumentException.class, () -> servicio.crear(null));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.crear(new CrearPartidoRequest(null, LocalDate.now(), null, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.crear(new CrearPartidoRequest(1L, null, null, null)));
+    }
+
+    @Test
+    @DisplayName("registrarResultado valida parametros y goles no negativos")
+    void registrarResultado_validaciones() {
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(null, new ResultadoRequest((short) 1, (short) 0, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(1L, null));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(1L, new ResultadoRequest(null, (short) 0, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(1L, new ResultadoRequest((short) 1, null, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(1L, new ResultadoRequest((short) -1, (short) 0, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                servicio.registrarResultado(1L, new ResultadoRequest((short) 0, (short) -2, null)));
+    }
+
+    @Test
+    @DisplayName("registrarResultado rechaza partido ya cerrado")
+    void registrarResultado_partidoCerrado() {
+        Partido cerrado = Partido.builder().idPartido(1L).categoria(categoria).cerrado(true).build();
+        when(partidoRepository.findWithCategoriaByIdPartido(1L)).thenReturn(Optional.of(cerrado));
+
+        var req = new ResultadoRequest((short) 2, (short) 1, null);
+        var ex = assertThrows(IllegalArgumentException.class, () -> servicio.registrarResultado(1L, req));
+        assertTrue(ex.getMessage().contains("cerrado"));
+    }
+
+    @Test
+    @DisplayName("reabrir valida partido cerrado y null")
+    void reabrir_validaciones() {
+        assertThrows(IllegalArgumentException.class, () -> servicio.reabrir(null));
+
+        Partido abierto = Partido.builder().idPartido(1L).categoria(categoria).cerrado(false).build();
+        when(partidoRepository.findWithCategoriaByIdPartido(1L)).thenReturn(Optional.of(abierto));
+
+        var ex = assertThrows(IllegalArgumentException.class, () -> servicio.reabrir(1L));
+        assertTrue(ex.getMessage().contains("no está cerrado"));
+    }
+
+    @Test
+    @DisplayName("eliminar valida null y rechaza partido cerrado")
+    void eliminar_validaciones() {
+        assertThrows(IllegalArgumentException.class, () -> servicio.eliminar(null));
+
+        Partido cerrado = Partido.builder().idPartido(1L).categoria(categoria).cerrado(true).build();
+        when(partidoRepository.findById(1L)).thenReturn(Optional.of(cerrado));
+
+        assertThrows(IllegalArgumentException.class, () -> servicio.eliminar(1L));
+        verify(partidoRepository, never()).delete(any());
+
+        Partido abierto = Partido.builder().idPartido(2L).categoria(categoria).cerrado(false).build();
+        when(partidoRepository.findById(2L)).thenReturn(Optional.of(abierto));
+        servicio.eliminar(2L);
+        verify(partidoRepository).delete(abierto);
+    }
 }

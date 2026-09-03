@@ -55,6 +55,9 @@ public class PartidoService {
 
     @Transactional(readOnly = true)
     public PartidoResponse buscarPorId(Long idPartido) {
+        if (idPartido == null) {
+            throw new IllegalArgumentException("El ID del partido es obligatorio");
+        }
         Partido p = partidoRepository.findWithCategoriaByIdPartido(idPartido)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el partido " + idPartido));
         return conAlineacion(List.of(p)).get(0);
@@ -64,6 +67,16 @@ public class PartidoService {
             descripcionSpel = "'agendó un partido de ' + #result.categoria + ' para el ' + #result.fecha")
     @Transactional
     public PartidoResponse crear(CrearPartidoRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La información del partido es obligatoria");
+        }
+        if (request.idCategoria() == null) {
+            throw new IllegalArgumentException("El ID de la categoría es obligatorio");
+        }
+        if (request.fecha() == null) {
+            throw new IllegalArgumentException("La fecha del partido es obligatoria");
+        }
+
         Categoria categoria = categoriaRepository.findById(request.idCategoria())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe la categoría " + request.idCategoria()));
@@ -86,6 +99,19 @@ public class PartidoService {
             descripcionSpel = "'cargó el resultado del partido ' + #p0 + ' y lo cerró'")
     @Transactional
     public PartidoResponse registrarResultado(Long idPartido, ResultadoRequest request) {
+        if (idPartido == null) {
+            throw new IllegalArgumentException("El ID del partido es obligatorio");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("El resultado del partido es obligatorio");
+        }
+        if (request.golesFavor() == null || request.golesContra() == null) {
+            throw new IllegalArgumentException("Los goles a favor y en contra son obligatorios");
+        }
+        if (request.golesFavor() < 0 || request.golesContra() < 0) {
+            throw new IllegalArgumentException("Los goles no pueden ser negativos");
+        }
+
         Partido p = partidoRepository.findWithCategoriaByIdPartido(idPartido)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el partido " + idPartido));
 
@@ -107,6 +133,9 @@ public class PartidoService {
             descripcionSpel = "'reabrio el partido ' + #p0 + ' para corregirlo'")
     @Transactional
     public PartidoResponse reabrir(Long idPartido) {
+        if (idPartido == null) {
+            throw new IllegalArgumentException("El ID del partido es obligatorio");
+        }
         Partido p = partidoRepository.findWithCategoriaByIdPartido(idPartido)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el partido " + idPartido));
 
@@ -142,6 +171,9 @@ public class PartidoService {
             descripcionSpel = "'eliminó el partido ' + #p0")
     @Transactional
     public void eliminar(Long idPartido) {
+        if (idPartido == null) {
+            throw new IllegalArgumentException("El ID del partido es obligatorio");
+        }
         Partido p = partidoRepository.findById(idPartido)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el partido " + idPartido));
 

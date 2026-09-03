@@ -117,6 +117,18 @@ class CategoriaServiceTest {
     }
 
     @Test
+    @DisplayName("crear rechaza edades negativas")
+    void crear_con_edad_negativa_lanza_excepcion() {
+        CategoriaRequest request = new CategoriaRequest("Sub-X", (short) -1, (short) 10, null);
+
+        assertThatThrownBy(() -> categoriaService.crear(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("negativas");
+
+        verify(categoriaRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("editar actualiza los campos de una categoria existente")
     void editar_actualiza_categoria() {
         Categoria existente = categoriaSub12();

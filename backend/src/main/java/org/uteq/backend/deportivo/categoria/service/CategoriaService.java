@@ -107,6 +107,10 @@ public class CategoriaService {
             throw new IllegalArgumentException("Las edades mínima y máxima son obligatorias");
         }
 
+        if (edadMin < 0 || edadMax < 0) {
+            throw new IllegalArgumentException("Las edades mínima y máxima no pueden ser negativas");
+        }
+
         if (edadMax <= edadMin) {
             throw new IllegalArgumentException("La edad máxima debe ser mayor a la edad mínima");
         }

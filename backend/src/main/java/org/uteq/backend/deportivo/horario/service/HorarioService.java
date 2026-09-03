@@ -39,6 +39,18 @@ public class HorarioService {
 
     @Transactional
     public HorarioResponse crear(String username, HorarioRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La información del horario es obligatoria");
+        }
+        if (request.idCategoria() == null) {
+            throw new IllegalArgumentException("El ID de la categoría es obligatorio");
+        }
+        if (request.diaSemana() == null || request.diaSemana() < 1 || request.diaSemana() > 7) {
+            throw new IllegalArgumentException("El día de la semana debe ser entre 1 (Lunes) y 7 (Domingo)");
+        }
+        if (request.horaInicio() == null || request.horaFin() == null) {
+            throw new IllegalArgumentException("Las horas de inicio y fin son obligatorias");
+        }
         Entrenador entrenador = entrenadorAutenticado(username);
 
         if (!request.horaFin().isAfter(request.horaInicio())) {
@@ -48,6 +60,10 @@ public class HorarioService {
         Categoria categoria = categoriaRepository.findById(request.idCategoria())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Categoria no encontrada con id: " + request.idCategoria()));
+
+        if (Boolean.FALSE.equals(categoria.getActivo())) {
+            throw new IllegalArgumentException("No se pueden asignar horarios a una categoría inactiva");
+        }
 
         validarQueNoSeCruce(entrenador.getIdEntrenador(), request, SIN_ID_TODAVIA);
 
@@ -106,6 +122,9 @@ public class HorarioService {
 
     @Transactional
     public void desactivar(String username, Long idHorario) {
+        if (idHorario == null) {
+            throw new IllegalArgumentException("El ID del horario es obligatorio");
+        }
         Entrenador entrenador = entrenadorAutenticado(username);
         Horario horario = horarioRepository
                 .findByIdHorarioAndEntrenador_IdEntrenador(idHorario, entrenador.getIdEntrenador())
@@ -116,6 +135,21 @@ public class HorarioService {
 
     @Transactional
     public HorarioResponse editar(String username, Long idHorario, HorarioRequest request) {
+        if (idHorario == null) {
+            throw new IllegalArgumentException("El ID del horario es obligatorio");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("La información del horario es obligatoria");
+        }
+        if (request.idCategoria() == null) {
+            throw new IllegalArgumentException("El ID de la categoría es obligatorio");
+        }
+        if (request.diaSemana() == null || request.diaSemana() < 1 || request.diaSemana() > 7) {
+            throw new IllegalArgumentException("El día de la semana debe ser entre 1 (Lunes) y 7 (Domingo)");
+        }
+        if (request.horaInicio() == null || request.horaFin() == null) {
+            throw new IllegalArgumentException("Las horas de inicio y fin son obligatorias");
+        }
         Entrenador entrenador = entrenadorAutenticado(username);
         Horario horario = horarioRepository
                 .findByIdHorarioAndEntrenador_IdEntrenador(idHorario, entrenador.getIdEntrenador())
@@ -128,6 +162,10 @@ public class HorarioService {
         Categoria categoria = categoriaRepository.findById(request.idCategoria())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Categoria no encontrada con id: " + request.idCategoria()));
+
+        if (Boolean.FALSE.equals(categoria.getActivo())) {
+            throw new IllegalArgumentException("No se pueden asignar horarios a una categoría inactiva");
+        }
 
         validarQueNoSeCruce(entrenador.getIdEntrenador(), request, idHorario);
 
@@ -186,8 +224,15 @@ public class HorarioService {
     }
 
     private Entrenador entrenadorAutenticado(String username) {
-        return entrenadorRepository.findByUsuario_Username(username)
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de usuario es obligatorio");
+        }
+        Entrenador entrenador = entrenadorRepository.findByUsuario_Username(username)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No hay un entrenador asociado a esta cuenta"));
+        if (Boolean.FALSE.equals(entrenador.getActivo())) {
+            throw new IllegalArgumentException("El entrenador se encuentra inactivo");
+        }
+        return entrenador;
     }
 
     private HorarioResponse aResponse(Horario h) {

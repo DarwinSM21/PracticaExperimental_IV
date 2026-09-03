@@ -49,6 +49,7 @@ class HorarioServiceTest {
     private Entrenador entrenador(long id) {
         return Entrenador.builder().idEntrenador(id)
                 .persona(Persona.builder().nombre("Carlos").apellido("Apellido").build())
+                .activo(true)
                 .build();
     }
 
@@ -396,5 +397,34 @@ class HorarioServiceTest {
         assertThat(lista.get(1).chocaCon()).contains("SUB-12");
 
         assertThat(lista.get(2).chocaCon()).isNull();
+    }
+
+    @Test
+    @DisplayName("crear y editar validan que el entrenador y categoria esten activos y parametros no nulos")
+    void validaciones_parametros_y_estados() {
+        assertThrows(IllegalArgumentException.class, () -> service.crear("carlos@sged.test", null));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.crear("carlos@sged.test", new HorarioRequest(null, 1, LocalTime.of(8, 0), LocalTime.of(10, 0), null, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.crear("carlos@sged.test", new HorarioRequest(5L, 0, LocalTime.of(8, 0), LocalTime.of(10, 0), null, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.crear("carlos@sged.test", new HorarioRequest(5L, 8, LocalTime.of(8, 0), LocalTime.of(10, 0), null, null)));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.crear("carlos@sged.test", new HorarioRequest(5L, 1, null, LocalTime.of(10, 0), null, null)));
+
+        assertThrows(IllegalArgumentException.class, () -> service.desactivar("carlos@sged.test", null));
+        assertThrows(IllegalArgumentException.class, () -> service.editar("carlos@sged.test", null, peticion(LocalTime.of(8, 0), LocalTime.of(10, 0))));
+
+        // Entrenador inactivo
+        var inactivo = Entrenador.builder().idEntrenador(2L).activo(false).build();
+        when(entrenadorRepository.findByUsuario_Username("inactivo@sged.test")).thenReturn(Optional.of(inactivo));
+        var req = peticion(LocalTime.of(8, 0), LocalTime.of(10, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.crear("inactivo@sged.test", req));
+
+        // Categoria inactiva
+        var activo = entrenador(1L);
+        when(entrenadorRepository.findByUsuario_Username("carlos@sged.test")).thenReturn(Optional.of(activo));
+        when(categoriaRepository.findById(5L)).thenReturn(Optional.of(Categoria.builder().idCategoria(5L).activo(false).build()));
+        assertThrows(IllegalArgumentException.class, () -> service.crear("carlos@sged.test", req));
     }
 }

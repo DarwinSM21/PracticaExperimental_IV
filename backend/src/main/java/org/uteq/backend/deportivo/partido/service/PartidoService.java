@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.time.Instant;
+import java.time.LocalDate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.uteq.backend.seguridad.usuario.repository.UsuarioRepository;
 
@@ -35,15 +36,21 @@ public class PartidoService {
     private final UsuarioRepository usuarioRepository;
 
     @Transactional(readOnly = true)
-    public PartidoPageResponse listar(Long idCategoria, int pagina, int tamano) {
+    public PartidoPageResponse listar(Long idCategoria, Boolean cerrado, LocalDate fechaDesde, LocalDate fechaHasta, int pagina, int tamano) {
+        if (fechaDesde != null && fechaHasta != null && fechaDesde.isAfter(fechaHasta)) {
+            throw new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
+        }
         var pageable = PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamano, 1), 100));
-        Page<Partido> page = idCategoria == null
-                ? partidoRepository.findAllByOrderByFechaDescHoraDesc(pageable)
-                : partidoRepository.findByCategoria_IdCategoriaOrderByFechaDescHoraDesc(idCategoria, pageable);
+        Page<Partido> page = partidoRepository.buscarConFiltros(idCategoria, cerrado, fechaDesde, fechaHasta, pageable);
 
         List<PartidoResponse> contenido = conAlineacion(page.getContent());
         return new PartidoPageResponse(contenido, page.getNumber(), page.getSize(),
                 page.getTotalElements(), page.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public PartidoPageResponse listar(Long idCategoria, int pagina, int tamano) {
+        return listar(idCategoria, null, null, null, pagina, tamano);
     }
 
     @Transactional(readOnly = true)

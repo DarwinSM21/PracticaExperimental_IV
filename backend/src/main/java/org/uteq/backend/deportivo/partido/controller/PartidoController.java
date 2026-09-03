@@ -2,6 +2,7 @@ package org.uteq.backend.deportivo.partido.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,8 @@ import org.uteq.backend.deportivo.partido.dto.PartidoDtos.ResultadoRequest;
 import org.uteq.backend.deportivo.partido.service.AlineacionService;
 import org.uteq.backend.deportivo.partido.service.PartidoService;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/api/partidos")
 @RequiredArgsConstructor
@@ -28,9 +31,12 @@ public class PartidoController {
     @GetMapping
     public ResponseEntity<PartidoPageResponse> listar(
             @RequestParam(required = false) Long idCategoria,
+            @RequestParam(required = false) Boolean cerrado,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(partidoService.listar(idCategoria, page, size));
+        return ResponseEntity.ok(partidoService.listar(idCategoria, cerrado, fechaDesde, fechaHasta, page, size));
     }
 
     @GetMapping("/{idPartido}")

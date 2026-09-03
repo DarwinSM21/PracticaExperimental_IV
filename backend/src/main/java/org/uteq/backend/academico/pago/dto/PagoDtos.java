@@ -68,4 +68,12 @@ public final class PagoDtos {
             BigDecimal promedioMensual,
             IngresosMesResponse mejorMes
     ) {}
+
+    public record PagoPageResponse(
+            List<PagoResponse> contenido,
+            int pagina,
+            int tamano,
+            long total,
+            int totalPaginas
+    ) {}
 }

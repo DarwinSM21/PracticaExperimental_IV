@@ -171,4 +171,43 @@ class PagoControllerTest {
                 .andExpect(jsonPath("$.total").value(150.00))
                 .andExpect(jsonPath("$.cantidadPagos").value(3));
     }
+
+    @Test
+    @DisplayName("listar devuelve pagina de pagos con filtros")
+    void listar_con_filtros_devuelve_200() throws Exception {
+        var pageResponse = new org.uteq.backend.academico.pago.dto.PagoDtos.PagoPageResponse(
+                List.of(new org.uteq.backend.academico.pago.dto.PagoDtos.PagoResponse(
+                        1L, 1L, "Juan Perez", TipoPago.MEMBRESIA, 2026, 8,
+                        new BigDecimal("30.00"), LocalDate.of(2026, 8, 1),
+                        "Admin Sistema", null, null, null)),
+                0, 20, 1L, 1);
+        when(pagoService.listar(eq(1L), eq(TipoPago.MEMBRESIA), eq(LocalDate.of(2026, 8, 1)),
+                eq(LocalDate.of(2026, 8, 31)), eq(false), eq(0), eq(20)))
+                .thenReturn(pageResponse);
+
+        mockMvc.perform(get("/api/pagos")
+                        .param("idEstudiante", "1")
+                        .param("tipo", "MEMBRESIA")
+                        .param("fechaDesde", "2026-08-01")
+                        .param("fechaHasta", "2026-08-31")
+                        .param("anulado", "false")
+                        .param("pagina", "0")
+                        .param("tamano", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.contenido", hasSize(1)))
+                .andExpect(jsonPath("$.contenido[0].idPago").value(1));
+    }
+
+    @Test
+    @DisplayName("listar con rango de fechas invertido devuelve 400")
+    void listar_fechas_invalidas_da_400() throws Exception {
+        when(pagoService.listar(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenThrow(new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta"));
+
+        mockMvc.perform(get("/api/pagos")
+                        .param("fechaDesde", "2026-09-01")
+                        .param("fechaHasta", "2026-08-01"))
+                .andExpect(status().isBadRequest());
+    }
 }

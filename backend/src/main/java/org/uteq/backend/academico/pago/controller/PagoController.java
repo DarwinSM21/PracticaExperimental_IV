@@ -2,6 +2,7 @@ package org.uteq.backend.academico.pago.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,8 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.uteq.backend.academico.pago.dto.PagoDtos.*;
 import org.uteq.backend.academico.pago.entity.Pago;
+import org.uteq.backend.academico.pago.entity.Pago.TipoPago;
 import org.uteq.backend.academico.pago.service.PagoService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -19,6 +22,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PagoController {
     private final PagoService pagoService;
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PagoPageResponse> listar(
+            @RequestParam(required = false) Long idEstudiante,
+            @RequestParam(required = false) TipoPago tipo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Boolean anulado,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamano) {
+        return ResponseEntity.ok(pagoService.listar(idEstudiante, tipo, fechaDesde, fechaHasta, anulado, pagina, tamano));
+    }
 
     @PostMapping("/membresia")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")

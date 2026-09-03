@@ -71,7 +71,7 @@ public class EstudianteService {
     }
 
     @Auditado(accion = "CREAR", entidad = "Estudiante", idSpel = "#result.idEstudiante",
-            descripcionSpel = "'creó la ficha de estudiante de ' + #result.nombrePersona + ' ' + #result.apellidoPersona")
+            descripcionSpel = "'creÃ³ la ficha de estudiante de ' + #result.nombrePersona + ' ' + #result.apellidoPersona")
     @CacheEvict(value = RedisCacheConfig.CACHE_ESTUDIANTES, allEntries = true)
     @Transactional
     public EstudianteResponse crear(EstudianteRequest request) {
@@ -87,7 +87,7 @@ public class EstudianteService {
             }
 
             Categoria categoria = categoriaRepository.findById(request.idCategoria())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada: " + request.idCategoria()));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("CategorÃ­a no encontrada: " + request.idCategoria()));
 
             EstadoGeneral estadoGeneral = estadoGeneralRepository.findById(request.idEstadoGeneral())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Estado General no encontrado: " + request.idEstadoGeneral()));
@@ -106,14 +106,14 @@ public class EstudianteService {
         }
 
         if (estudianteRepository.existsByCodigoEstudiante(request.codigoEstudiante())) {
-            throw new IllegalArgumentException("El código de estudiante '" + request.codigoEstudiante() + "' ya se encuentra en uso.");
+            throw new IllegalArgumentException("El cÃ³digo de estudiante '" + request.codigoEstudiante() + "' ya se encuentra en uso.");
         }
 
         Persona persona = personaRepository.findById(request.idPersona())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Persona no encontrada con ID: " + request.idPersona()));
 
         Categoria categoria = categoriaRepository.findById(request.idCategoria())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada: " + request.idCategoria()));
+                .orElseThrow(() -> new RecursoNoEncontradoException("CategorÃ­a no encontrada: " + request.idCategoria()));
 
         validarEdadEnCategoria(persona, categoria);
 
@@ -137,7 +137,7 @@ public class EstudianteService {
     }
 
     @Auditado(accion = "EDITAR", entidad = "Estudiante", idSpel = "#result.idEstudiante",
-            descripcionSpel = "'editó la ficha de ' + #result.nombrePersona + ' ' + #result.apellidoPersona")
+            descripcionSpel = "'editÃ³ la ficha de ' + #result.nombrePersona + ' ' + #result.apellidoPersona")
     @CacheEvict(value = RedisCacheConfig.CACHE_ESTUDIANTES, allEntries = true)
     @Transactional
     public EstudianteResponse editar(Long id, EstudianteRequest request) {
@@ -146,7 +146,7 @@ public class EstudianteService {
                         "Estudiante no encontrado con id: " + id));
 
         if (estudianteRepository.existsByCodigoEstudianteAndIdEstudianteNot(request.codigoEstudiante(), id)) {
-            throw new IllegalArgumentException("El código '" + request.codigoEstudiante() + "' ya está asignado a otro estudiante.");
+            throw new IllegalArgumentException("El cÃ³digo '" + request.codigoEstudiante() + "' ya estÃ¡ asignado a otro estudiante.");
         }
 
         reasignarPersonaSiCambio(estudiante, request.idPersona());
@@ -167,7 +167,7 @@ public class EstudianteService {
     }
 
     @Auditado(accion = "EDITAR", entidad = "Estudiante", idSpel = "#result.idEstudiante",
-            descripcionSpel = "'editó la posición de ' + #result.nombrePersona + ' ' + #result.apellidoPersona + ' a ' + (#result.nombrePosicion != null ? #result.nombrePosicion : 'sin posición')")
+            descripcionSpel = "'editÃ³ la posiciÃ³n de ' + #result.nombrePersona + ' ' + #result.apellidoPersona + ' a ' + (#result.nombrePosicion != null ? #result.nombrePosicion : 'sin posiciÃ³n')")
     @CacheEvict(value = RedisCacheConfig.CACHE_ESTUDIANTES, allEntries = true)
     @Transactional
     public EstudianteResponse actualizarPosicion(Long id, Long idPosicion) {
@@ -200,8 +200,8 @@ public class EstudianteService {
         if (edad < categoria.getEdadMin() || edad > categoria.getEdadMax()) {
             throw new IllegalArgumentException(
                     persona.getNombre() + " " + persona.getApellido() + " tiene " + edad
-                    + " años y " + categoria.getNombre() + " es para edades de "
-                    + categoria.getEdadMin() + " a " + categoria.getEdadMax() + " años");
+                    + " aÃ±os y " + categoria.getNombre() + " es para edades de "
+                    + categoria.getEdadMin() + " a " + categoria.getEdadMax() + " aÃ±os");
         }
     }
 
@@ -210,7 +210,7 @@ public class EstudianteService {
             return;
         }
         Categoria categoria = categoriaRepository.findById(idCategoriaNueva)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada: " + idCategoriaNueva));
+                .orElseThrow(() -> new RecursoNoEncontradoException("CategorÃ­a no encontrada: " + idCategoriaNueva));
         validarEdadEnCategoria(estudiante.getPersona(), categoria);
         estudiante.setCategoria(categoria);
     }
@@ -237,11 +237,11 @@ public class EstudianteService {
             return null;
         }
         return posicionRepository.findById(idPosicion)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Posición no encontrada: " + idPosicion));
+                .orElseThrow(() -> new RecursoNoEncontradoException("PosiciÃ³n no encontrada: " + idPosicion));
     }
 
     @Auditado(accion = "ELIMINAR", entidad = "Estudiante", idSpel = "#p0",
-            descripcionSpel = "'desactivó la ficha de estudiante #' + #p0")
+            descripcionSpel = "'desactivÃ³ la ficha de estudiante #' + #p0")
     @CacheEvict(value = RedisCacheConfig.CACHE_ESTUDIANTES, allEntries = true)
     @Transactional
     public void eliminar(Long id) {
@@ -265,6 +265,8 @@ public class EstudianteService {
             throw new IllegalArgumentException("La ficha de estudiante ya se encuentra activa");
         }
 
+        validarEdadEnCategoria(estudiante.getPersona(), estudiante.getCategoria());
+
         estudiante.setActivo(true);
         return toResponse(estudianteRepository.save(estudiante));
     }
@@ -276,7 +278,7 @@ public class EstudianteService {
     }
 
     @Auditado(accion = "EDITAR", entidad = "Estudiante",
-            descripcionSpel = "'desactivó los estudiantes de la Categoria #' + #p0")
+            descripcionSpel = "'desactivÃ³ los estudiantes de la Categoria #' + #p0")
     @CacheEvict(value = RedisCacheConfig.CACHE_ESTUDIANTES, allEntries = true)
     @Transactional
     public void desactivarPorCategoria(Long idCategoria) {
@@ -297,7 +299,7 @@ public class EstudianteService {
     }
 
     @Auditado(accion = "EDITAR", entidad = "Estudiante", idSpel = "#result.idEstudiante",
-            descripcionSpel = "'habilitó acceso al Estudiante #' + #result.idEstudiante")
+            descripcionSpel = "'habilitÃ³ acceso al Estudiante #' + #result.idEstudiante")
     @Transactional
     public EstudianteResponse habilitarAcceso(Long idEstudiante, HabilitarAccesoRequest request) {
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)

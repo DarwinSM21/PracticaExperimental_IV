@@ -27,6 +27,7 @@ import org.uteq.backend.seguridad.estado.repository.EstadoGeneralRepository;
 import org.uteq.backend.seguridad.persona.entity.Persona;
 import org.uteq.backend.seguridad.persona.repository.PersonaRepository;
 import org.uteq.backend.seguridad.usuario.entity.Usuario;
+import org.uteq.backend.deportivo.posicion.repository.PosicionRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -46,6 +47,7 @@ class EstudianteServiceTest {
     @Mock private EstadoGeneralRepository estadoGeneralRepository;
     @Mock private RepresentanteEstudianteRepository representanteEstudianteRepository;
     @Mock private EstudianteAccesoService estudianteAccesoService;
+    @Mock private PosicionRepository posicionRepository;
 
     @InjectMocks private EstudianteService service;
 
@@ -407,5 +409,69 @@ class EstudianteServiceTest {
         when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
 
         assertNotNull(service.crear(crearRequestValido()));
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // reactivar()
+    // ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("reactivar - Lanza IllegalArgumentException si el estudiante ya está activo")
+    void reactivar_ya_activo_lanza_excepcion() {
+        when(estudianteRepository.findById(1L)).thenReturn(Optional.of(estudianteDummy));
+        // estudianteDummy.activo = true (por defecto en setUp)
+
+        assertThrows(IllegalArgumentException.class, () -> service.reactivar(1L));
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("reactivar - Reactiva correctamente un estudiante inactivo cuya edad sigue siendo válida")
+    void reactivar_estudiante_inactivo_exito() {
+        Persona personaValida = personaDeEdad(11); // dentro de SUB-12 (10-12)
+        Estudiante estudianteInactivo = Estudiante.builder()
+                .idEstudiante(2L)
+                .persona(personaValida)
+                .categoria(categoriaDummy)
+                .estadoGeneral(estadoDummy)
+                .codigoEstudiante("EST-002")
+                .fechaIngreso(LocalDate.now().minusYears(1))
+                .activo(false)
+                .createdAt(Instant.now())
+                .build();
+
+        when(estudianteRepository.findById(2L)).thenReturn(Optional.of(estudianteInactivo));
+        when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
+
+        EstudianteResponse resp = service.reactivar(2L);
+
+        assertNotNull(resp);
+        assertTrue(estudianteInactivo.getActivo());
+        verify(estudianteRepository).save(estudianteInactivo);
+    }
+
+    @Test
+    @DisplayName("reactivar - Lanza IllegalArgumentException si la edad ya no cumple el rango de la categoría")
+    void reactivar_con_edad_fuera_de_rango_lanza_excepcion() {
+        Persona personaMayor = personaDeEdad(18); // fuera de SUB-12 (10-12)
+        Estudiante estudianteInactivo = Estudiante.builder()
+                .idEstudiante(3L)
+                .persona(personaMayor)
+                .categoria(categoriaDummy)
+                .estadoGeneral(estadoDummy)
+                .codigoEstudiante("EST-003")
+                .fechaIngreso(LocalDate.now().minusYears(6))
+                .activo(false)
+                .createdAt(Instant.now())
+                .build();
+
+        when(estudianteRepository.findById(3L)).thenReturn(Optional.of(estudianteInactivo));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> service.reactivar(3L));
+
+        assertTrue(e.getMessage().contains("18"), e.getMessage());
+        assertTrue(e.getMessage().contains("SUB-12"), e.getMessage());
+        verify(estudianteRepository, never()).save(any());
     }
 }

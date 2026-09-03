@@ -195,4 +195,46 @@ class EstudianteControllerTest {
                         .content("2"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("POST /api/estudiantes/{id}/reactivar - Reactiva el estudiante y devuelve 200")
+    void reactivar_devuelve_200() throws Exception {
+        when(estudianteService.reactivar(1L)).thenReturn(crearEstudianteResponse());
+
+        mockMvc.perform(post("/api/estudiantes/1/reactivar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idEstudiante").value(1))
+                .andExpect(jsonPath("$.activo").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /api/estudiantes/{id}/reactivar - Devuelve 400 si la regla de negocio falla (edad o ya activo)")
+    void reactivar_devuelve_400_si_falla_negocio() throws Exception {
+        when(estudianteService.reactivar(5L))
+                .thenThrow(new IllegalArgumentException("La ficha de estudiante ya se encuentra activa"));
+
+        mockMvc.perform(post("/api/estudiantes/5/reactivar"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/estudiantes/operaciones/siguiente-codigo - Devuelve el código generado")
+    void siguienteCodigo_devuelve_codigo_generado() throws Exception {
+        when(estudianteService.generarSiguienteCodigo(2026)).thenReturn("EST-2026-0001");
+
+        mockMvc.perform(get("/api/estudiantes/operaciones/siguiente-codigo")
+                        .param("anio", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("EST-2026-0001"));
+    }
+
+    @Test
+    @DisplayName("GET /api/estudiantes/{id}/contacto-emergencia - Devuelve el contacto de emergencia")
+    void contactoEmergencia_devuelve_contacto() throws Exception {
+        when(estudianteService.contactoDeEmergencia(1L)).thenReturn("Maria Perez - 0991234567");
+
+        mockMvc.perform(get("/api/estudiantes/1/contacto-emergencia"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Maria Perez - 0991234567"));
+    }
 }

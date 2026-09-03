@@ -42,7 +42,7 @@ public class UsuarioService {
     private final RepresentanteRepository representanteRepository;
     private final EstudianteRepository estudianteRepository;
 
-    @Cacheable(value = RedisCacheConfig.CACHE_USUARIOS, key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+    @Cacheable(value = RedisCacheConfig.CACHE_USUARIOS, key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     @Transactional(readOnly = true)
     public UsuarioPageResponse<UsuarioResponse> listar(Pageable pageable) {
         Page<Usuario> page = usuarioRepository.findAll(pageable);

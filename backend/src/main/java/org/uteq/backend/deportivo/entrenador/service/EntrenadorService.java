@@ -31,7 +31,7 @@ public class EntrenadorService {
     private final UsuarioRepository usuarioRepository;
     private final EspecialidadRepository especialidadRepository;
 
-    @Cacheable(value = RedisCacheConfig.CACHE_ENTRENADORES, key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+    @Cacheable(value = RedisCacheConfig.CACHE_ENTRENADORES, key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     @Transactional(readOnly = true)
     public EntrenadorPageResponse<EntrenadorResponse> listar(Pageable pageable) {
         Page<Entrenador> page = entrenadorRepository.findAll(pageable);

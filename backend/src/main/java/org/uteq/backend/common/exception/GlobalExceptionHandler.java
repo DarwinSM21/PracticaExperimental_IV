@@ -130,4 +130,50 @@ public class GlobalExceptionHandler {
         pd.setProperty("timestamp", Instant.now().toString());
         return pd;
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        pd.setType(URI.create("https://sged.uteq.edu.ec/errores/ConflictoEstado"));
+        pd.setTitle("Conflict");
+        pd.setProperty("timestamp", Instant.now().toString());
+        return pd;
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Violación de integridad de datos: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "Conflicto de integridad de datos o registro duplicado");
+        pd.setType(URI.create("https://sged.uteq.edu.ec/errores/ConflictoIntegridad"));
+        pd.setTitle("Conflict");
+        pd.setProperty("timestamp", Instant.now().toString());
+        return pd;
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(jakarta.validation.ConstraintViolationException ex) {
+        List<String> errores = ex.getConstraintViolations().stream()
+                .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
+                .toList();
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Parámetros de consulta o ruta inválidos");
+        pd.setType(URI.create("https://sged.uteq.edu.ec/errores/ParametrosInvalidos"));
+        pd.setTitle("Bad Request");
+        pd.setProperty("errores", errores);
+        pd.setProperty("timestamp", Instant.now().toString());
+        return pd;
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.METHOD_NOT_ALLOWED, "Método HTTP no soportado para este endpoint");
+        pd.setType(URI.create("https://sged.uteq.edu.ec/errores/MetodoNoPermitido"));
+        pd.setTitle("Method Not Allowed");
+        pd.setProperty("metodo", ex.getMethod());
+        pd.setProperty("timestamp", Instant.now().toString());
+        return pd;
+    }
 }

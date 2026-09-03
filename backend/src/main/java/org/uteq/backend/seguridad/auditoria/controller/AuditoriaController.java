@@ -40,7 +40,9 @@ public class AuditoriaController {
             throw new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fecha"));
+        int paginaNormalizada = Math.max(page, 0);
+        int tamanoNormalizado = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(paginaNormalizada, tamanoNormalizado, Sort.by(Sort.Direction.DESC, "fecha"));
         OffsetDateTime desde = fechaDesde != null
                 ? fechaDesde.atStartOfDay(Zonas.ECUADOR).toOffsetDateTime() : null;
         OffsetDateTime hasta = fechaHasta != null

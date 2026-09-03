@@ -83,4 +83,16 @@ class AuditoriaControllerTest {
                         .param("fechaHasta", "2026-08-01"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("GET /api/admin/auditorias normaliza pagina negativa y tamano excesivo")
+    void listarNormalizaPaginacion() throws Exception {
+        when(auditoriaService.buscar(isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
+
+        mockMvc.perform(get("/api/admin/auditorias")
+                        .param("page", "-5")
+                        .param("size", "300"))
+                .andExpect(status().isOk());
+    }
 }

@@ -210,4 +210,50 @@ class PagoControllerTest {
                         .param("fechaHasta", "2026-08-01"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("anular pago devuelve 200 con pago anulado")
+    void anular_pago_devuelve_200() throws Exception {
+        autenticarComo("admin@sged.test", "ADMINISTRADOR");
+        Pago p = pago(1L, TipoPago.DIARIO, null, null);
+        p.setAnuladoEn(java.time.OffsetDateTime.now());
+        p.setMotivoAnulacion("Error de digitacion");
+
+        when(pagoService.anular(eq(1L), eq("Error de digitacion"), eq("admin@sged.test")))
+                .thenReturn(p);
+
+        mockMvc.perform(post("/api/pagos/1/anular")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"Error de digitacion\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idPago").value(1))
+                .andExpect(jsonPath("$.motivoAnulacion").value("Error de digitacion"));
+    }
+
+    @Test
+    @DisplayName("anular pago inexistente devuelve 404")
+    void anular_pago_inexistente_devuelve_404() throws Exception {
+        autenticarComo("admin@sged.test", "ADMINISTRADOR");
+        when(pagoService.anular(eq(999L), any(), any()))
+                .thenThrow(new RecursoNoEncontradoException("Pago no encontrado con id: 999"));
+
+        mockMvc.perform(post("/api/pagos/999/anular")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"Error\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("ingresosHistorico devuelve 200 con resumen historico")
+    void ingresosHistorico_devuelve_200() throws Exception {
+        var historico = new org.uteq.backend.academico.pago.dto.PagoDtos.HistoricoIngresosResponse(
+                List.of(new IngresosMesResponse(2026, 8, new BigDecimal("100.00"), 2L)),
+                new BigDecimal("100.00"), new BigDecimal("100.00"), null);
+        when(pagoService.historicoIngresos(6)).thenReturn(historico);
+
+        mockMvc.perform(get("/api/pagos/ingresos-historico").param("meses", "6"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(100.00))
+                .andExpect(jsonPath("$.promedioMensual").value(100.00));
+    }
 }

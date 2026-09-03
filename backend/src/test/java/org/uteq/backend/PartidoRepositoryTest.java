@@ -170,4 +170,37 @@ class PartidoRepositoryTest {
         assertThat(vacio.getTotalElements()).isZero();
         assertThat(vacio.getContent()).isEmpty();
     }
+
+    @Test
+    @DisplayName("findAllByOrderByFechaDescHoraDesc - Retorna ordenados correctamente con paginación")
+    void findAllByOrderByFechaDescHoraDesc() {
+        Page<Partido> page = partidoRepository.findAllByOrderByFechaDescHoraDesc(PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getContent()).extracting(Partido::getIdPartido)
+                .containsExactly(partido3.getIdPartido(), partido2.getIdPartido(), partido1.getIdPartido());
+    }
+
+    @Test
+    @DisplayName("findByCategoria_IdCategoriaOrderByFechaDescHoraDesc - Filtra por categoria y ordena")
+    void findByCategoria_IdCategoriaOrderByFechaDescHoraDesc() {
+        Page<Partido> page = partidoRepository.findByCategoria_IdCategoriaOrderByFechaDescHoraDesc(
+                catSub14.getIdCategoria(), PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(page.getContent()).extracting(Partido::getIdPartido)
+                .containsExactly(partido2.getIdPartido(), partido1.getIdPartido());
+    }
+
+    @Test
+    @DisplayName("findWithCategoriaByIdPartido - Carga el partido con su categoria")
+    void findWithCategoriaByIdPartido() {
+        var opt = partidoRepository.findWithCategoriaByIdPartido(partido1.getIdPartido());
+
+        assertThat(opt).isPresent();
+        assertThat(opt.get().getCategoria().getNombre()).isEqualTo("SUB-14");
+
+        var inexistente = partidoRepository.findWithCategoriaByIdPartido(99999L);
+        assertThat(inexistente).isEmpty();
+    }
 }

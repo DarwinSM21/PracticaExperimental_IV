@@ -119,4 +119,29 @@ class HorarioRepositoryTest {
 
         assertThat(solapes).isEmpty();
     }
+
+    @Test
+    @DisplayName("cruzadosCon no colisiona si las horas son adyacentes o si el horario esta inactivo")
+    void cruzadosCon_adyacenteEInactivo() {
+        // Justo después: 10:00 a 12:00 (termina a las 10:00, empieza a las 10:00)
+        List<Horario> solapes = horarioRepository.cruzadosCon(
+                entrenador.getIdEntrenador(), (short) 1,
+                LocalTime.of(10, 0), LocalTime.of(12, 0), -1L);
+
+        // horarioInactivo está de 10 a 12 pero está inactivo (activo = false), por lo que no debe colisionar
+        assertThat(solapes).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findByIdHorarioAndEntrenador_IdEntrenador encuentra solo si pertenece al entrenador")
+    void findByIdHorarioAndEntrenador_IdEntrenador() {
+        var opt = horarioRepository.findByIdHorarioAndEntrenador_IdEntrenador(
+                horarioLunesManana.getIdHorario(), entrenador.getIdEntrenador());
+        assertThat(opt).isPresent();
+        assertThat(opt.get().getIdHorario()).isEqualTo(horarioLunesManana.getIdHorario());
+
+        var optOtroEntrenador = horarioRepository.findByIdHorarioAndEntrenador_IdEntrenador(
+                horarioLunesManana.getIdHorario(), 9999L);
+        assertThat(optOtroEntrenador).isEmpty();
+    }
 }
